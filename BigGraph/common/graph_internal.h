@@ -12,32 +12,32 @@ inline int Graph::get_num_edges() const {
     return this->num_edges;
 }
 
-inline std::vector<Vertex>::const_iterator Graph::outgoing_begin(Vertex v) {
+inline Vertex* Graph::outgoing_begin(Vertex v) const {
     REQUIRES(0 <= v && v < this->num_edges);
-    return this->outgoing_edges.cbegin() + this->outgoing_starts[v];
+    return this->outgoing_edges + this->outgoing_starts[v];
 }
 
-inline std::vector<Vertex>::const_iterator Graph::outgoing_end(Vertex v) {
+inline Vertex* Graph::outgoing_end(Vertex v) const {
     REQUIRES(0 <= v && v < this->num_edges);
-    return this->outgoing_edges.cbegin() + this->outgoing_starts[v + 1];
+    return this->outgoing_edges + this->outgoing_starts[v + 1];
 }
 
-inline int Graph::outgoing_size(Vertex v) {
+inline int Graph::outgoing_size(Vertex v) const {
     REQUIRES(0 <= v && v < this->num_nodes);
     return this->outgoing_starts[v + 1] - this->outgoing_starts[v];
 }
 
-inline std::vector<Vertex>::const_iterator Graph::incoming_begin(Vertex v) {
+inline Vertex* Graph::incoming_begin(Vertex v) const {
     REQUIRES(0 <= v && v < this->num_nodes);
-    return this->incoming_edges.cbegin() + this->incoming_starts[v];
+    return this->incoming_edges + this->incoming_starts[v];
 }
 
-inline std::vector<Vertex>::const_iterator Graph::incoming_end(Vertex v) {
+inline Vertex* Graph::incoming_end(Vertex v) const {
     REQUIRES(0 <= v && v < this->num_nodes);
-    return this->incoming_edges.cbegin() + this->incoming_starts[v + 1];
+    return this->incoming_edges + this->incoming_starts[v + 1];
 }
 
-inline int Graph::incoming_size(Vertex v) {
+inline int Graph::incoming_size(Vertex v) const {
     REQUIRES(0 <= v && v < this->num_nodes);
     return this->incoming_starts[v + 1] - this->incoming_starts[v];
 }

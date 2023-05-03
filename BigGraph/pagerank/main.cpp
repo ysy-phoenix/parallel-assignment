@@ -14,7 +14,7 @@
 #define PageRankConvergence 1e-7
 
 int main(int argc, char **argv) {
-
+    test();
     std::string graph_filename;
 
     if (argc < 2) {
@@ -45,7 +45,7 @@ int main(int argc, char **argv) {
     g.load_graph_binary(graph_filename);
     std::cout << "Graph stats:" << std::endl;
     std::cout << "  Edges: " << g.get_num_edges() << std::endl;
-    std::cout <<"  Nodes: " << g.get_num_nodes() << std::endl;
+    std::cout << "  Nodes: " << g.get_num_nodes() << std::endl;
 
     auto numNodes = g.get_num_nodes();
     //If we want to run on all threads
@@ -62,8 +62,7 @@ int main(int argc, char **argv) {
         num_threads.push_back(max_threads);
         auto n_usage = num_threads.size();
 
-        double *sol1;
-        sol1 = (double *) malloc(sizeof(double) * numNodes);
+        auto *sol1 = new double[numNodes];
 
         double pagerank_base;
         double pagerank_time;
@@ -100,10 +99,10 @@ int main(int argc, char **argv) {
         std::cout << "Your Code: Timing Summary" << std::endl;
         std::cout << timing.str();
         std::cout << "----------------------------------------------------------" << std::endl;
+        delete[] sol1;
     }
     else { // Run the code with only one thread count and only report speedup
-        double *sol1;
-        sol1 = (double *) malloc(sizeof(double) * numNodes);
+        auto *sol1 = new double[numNodes];
 
         double pagerank_time;
 
@@ -131,6 +130,7 @@ int main(int argc, char **argv) {
         std::cout << "----------------------------------------------------------" << std::endl;
         std::cout << "Your Code: Timing Summary" << std::endl;
         std::cout << timing.str();
+        delete[] sol1;
     }
 
     return 0;

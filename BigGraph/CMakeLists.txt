@@ -5,5 +5,6 @@ project(BigGraph)
 # Add subdirectories
 add_subdirectory(tools)
 add_subdirectory(pagerank)
+add_subdirectory(bfs)
 
 find_package(OpenMP REQUIRED)

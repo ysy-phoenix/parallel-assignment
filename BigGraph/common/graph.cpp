@@ -3,20 +3,12 @@
 #include <fstream>
 #include <sstream>
 #include <cstdlib>
+#include <cstdio>
 
 #include "graph.h"
 
 #define GRAPH_HEADER_TOKEN ((int) 0xDEADBEEF)
 
-
-void Graph::build_outgoing_starts(std::vector<int> &starts) {
-    this->outgoing_starts = std::move(starts);
-    this->outgoing_starts.push_back(this->num_edges);
-}
-
-void Graph::build_outgoing_edges(std::vector<Vertex> &edges) {
-    this->outgoing_edges = std::move(edges);
-}
 
 // Given an outgoing edge adjacency list representation for a directed
 // graph, build an incoming adjacency list representation
@@ -29,8 +21,8 @@ void Graph::build_incoming() {
     std::vector<int> node_counts(this->num_nodes);
     std::vector<int> node_scatter(this->num_nodes);
 
-    this->incoming_starts = std::vector<int>(this->num_nodes + 1);
-    this->incoming_edges = std::vector<Vertex>(this->num_edges);
+    this->incoming_starts = new int[this->num_nodes + 1];
+    this->incoming_edges = new Vertex[this->num_edges];
 
     // compute number of incoming edges per node
     int total_edges = 0;
@@ -129,15 +121,21 @@ void Graph::get_meta_data(std::ifstream &file) {
     this->num_edges = strtol(buffer.c_str(), nullptr, 10);
 }
 
-void Graph::read_graph_file(std::ifstream &file, std::vector<int> &starts, std::vector<Vertex> &edges) {
+void Graph::read_graph_file(std::ifstream &file) {
     std::string buffer;
     bool started = true;
+    int idx = 0;
+    this->outgoing_starts = new int[this->num_nodes + 1];
+    this->outgoing_edges = new Vertex[this->num_edges];
+
     while (!file.eof()) {
         buffer.clear();
         std::getline(file, buffer);
 
         if (!buffer.empty() && buffer[0] == '#') {
             started = false;
+            this->outgoing_starts[idx++] = this->num_edges;
+            idx = 0;
             continue;
         }
 
@@ -149,9 +147,9 @@ void Graph::read_graph_file(std::ifstream &file, std::vector<int> &starts, std::
                 break;
             }
             if (started) {
-                starts.push_back(v);
+                this->outgoing_starts[idx++] = v;
             } else {
-                edges.push_back(v);
+                this->outgoing_edges[idx++] = v;
             }
         }
     }
@@ -167,10 +165,10 @@ std::ostream &operator<<(std::ostream &os, const Graph &graph) {
 
         int start_edge = graph.outgoing_starts[i];
         int end_edge = graph.outgoing_starts[i + 1];
-        os << "node " << i << ": out = " << end_edge - start_edge << ": ";
+        os << "node " << i << ": out = " << end_edge - start_edge << " : ";
         for (int j = start_edge; j < end_edge; ++j) {
             int target = graph.outgoing_edges[j];
-            os << target;
+            os << target << " ";
         }
         os << std::endl;
 
@@ -179,7 +177,7 @@ std::ostream &operator<<(std::ostream &os, const Graph &graph) {
         os << "         in = " << end_edge - start_edge << " : ";
         for (int j = start_edge; j < end_edge; ++j) {
             int target = graph.incoming_edges[j];
-            os << target;
+            os << target << " ";
         }
         os << std::endl;
     }
@@ -193,13 +191,7 @@ void Graph::load_graph(const std::string &filename) {
     this->get_meta_data(graph_file);
 
     // read the file
-    std::vector<int> starts;
-    std::vector<Vertex> edges;
-    read_graph_file(graph_file, starts, edges);
-
-    // build the graph
-    this->build_outgoing_starts(starts);
-    this->build_outgoing_edges(edges);
+    read_graph_file(graph_file);
 
     this->build_incoming();
 
@@ -208,54 +200,46 @@ void Graph::load_graph(const std::string &filename) {
     #endif
 }
 
-void Graph::load_graph_binary(const std::string& filename) {
-    int data;
-    std::ifstream fin;
+void Graph::load_graph_binary(const std::string &filename) {
+    const char* file = filename.c_str();
+    FILE* input;
+    fopen_s(&input, file, "rb");
 
-    fin.open(filename, std::ios::in | std::ios::binary);
-    if (!fin.is_open()) {
-        std::cerr << "Could not open: " << filename << std::endl;
+    if (!input) {
+        fprintf(stderr, "Could not open: %s\n", file);
         exit(1);
     }
 
-    // read header
-    if (!fin.read((char*)&data, sizeof(data))) {
-        std::cerr << "Error reading header." << std::endl;
-    }
-    if (data != GRAPH_HEADER_TOKEN) {
-        std::cerr << "Invalid graph file header. File may be corrupt." << std::endl;
+    int header[3];
+
+    if (fread(header, sizeof(int), 3, input) != 3) {
+        fprintf(stderr, "Error reading header.\n");
+        exit(1);
     }
 
-    // read number of nodes
-    if (!fin.read((char*)&data, sizeof(data))) {
-        std::cerr << "Error reading number of nodes." << std::endl;
-    }
-    this->num_nodes = data;
-
-    // read number of edges
-    if (!fin.read((char*)&data, sizeof(data))) {
-        std::cerr << "Error reading number of edges." << std::endl;
-    }
-    this->num_edges = data;
-
-    // read outgoing starts
-    for (int i = 0; i < this->num_nodes; ++i) {
-        if (!fin.read((char*)&data, sizeof(data))) {
-            std::cerr << "Error reading node " << i << std::endl;
-        }
-        this->outgoing_starts.push_back(data);
-    }
-    this->outgoing_starts.push_back(this->num_edges);
-
-    // read outgoing edges
-    for (int i = 0; i < this->num_edges; ++i) {
-        if (!fin.read((char*)&data, sizeof(data))) {
-            std::cerr << "Error reading edge " << i << std::endl;
-        }
-        this->outgoing_edges.push_back(data);
+    if (header[0] != GRAPH_HEADER_TOKEN) {
+        fprintf(stderr, "Invalid graph file header. File may be corrupt.\n");
+        exit(1);
     }
 
-    fin.close();
+    this->num_nodes = header[1];
+    this->num_edges = header[2];
+
+    this->outgoing_starts = new int[this->num_nodes + 1];
+    this->outgoing_edges = new Vertex[this->num_edges];
+
+    if (fread(this->outgoing_starts, sizeof(int), this->num_nodes, input) != (size_t) this->num_nodes) {
+        fprintf(stderr, "Error reading nodes.\n");
+        exit(1);
+    }
+    this->outgoing_starts[this->num_nodes] = this->num_edges;
+
+    if (fread(this->outgoing_edges, sizeof(int), this->num_edges, input) != (size_t) this->num_edges) {
+        fprintf(stderr, "Error reading edges.\n");
+        exit(1);
+    }
+
+    fclose(input);
 
     this->build_incoming();
 
@@ -265,49 +249,34 @@ void Graph::load_graph_binary(const std::string& filename) {
 }
 
 void Graph::store_graph_binary(const std::string &filename) {
+    const char* file = filename.c_str();
+    FILE* output;
+    fopen_s(&output,file, "wb");
 
-    std::ofstream fout;
-    int data;
-
-    fout.open(filename, std::ios::out | std::ios::binary);
-    if (!fout.is_open()) {
-        std::cerr << "Could not open: " << filename << std::endl;
+    if (!output) {
+        fprintf(stderr, "Could not open: %s\n", file);
         exit(1);
     }
 
-    // write header
-    data = GRAPH_HEADER_TOKEN;
-    if (!fout.write((char*)&data, sizeof(data))) {
-        std::cerr << "Error writing header." << std::endl;
+    int header[3];
+    header[0] = GRAPH_HEADER_TOKEN;
+    header[1] = this->num_nodes;
+    header[2] = this->num_edges;
+
+    if (fwrite(header, sizeof(int), 3, output) != 3) {
+        fprintf(stderr, "Error writing header.\n");
+        exit(1);
     }
 
-    // write number of nodes
-    data = this->num_nodes;
-    if (!fout.write((char*)&data, sizeof(data))) {
-        std::cerr << "Error writing number of nodes." << std::endl;
+    if (fwrite(this->outgoing_starts, sizeof(int), this->num_nodes, output) != (size_t) this->num_nodes) {
+        fprintf(stderr, "Error writing nodes.\n");
+        exit(1);
     }
 
-    // write number of edges
-    data = this->num_edges;
-    if (!fout.write((char*)&data, sizeof(data))) {
-        std::cerr << "Error writing number of edges." << std::endl;
+    if (fwrite(this->outgoing_edges, sizeof(int), this->num_edges, output) != (size_t) this->num_edges) {
+        fprintf(stderr, "Error writing edges.\n");
+        exit(1);
     }
 
-    // write outgoing starts
-    for (int i = 0; i < this->num_nodes; ++i) {
-        data = this->outgoing_starts[i];
-        if (!fout.write((char*)&data, sizeof(data))) {
-            std::cerr << "Error writing node " << i << std::endl;
-        }
-    }
-
-    // write outgoing edges
-    for (int i = 0; i < this->num_edges; ++i) {
-        data = this->outgoing_edges[i];
-        if (!fout.write((char*)&data, sizeof(data))) {
-            std::cerr << "Error writing edge " << i << std::endl;
-        }
-    }
-
-    fout.close();
+    fclose(output);
 }
