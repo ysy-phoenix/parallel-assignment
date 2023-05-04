@@ -16,13 +16,13 @@ set(THRUST_LIBRARIES thrust)
 
 add_executable(removal
         main.cu
-        Clustering.h
-        ColorProcessing.h
-        SpecularHighlightRemoval.h
-        useCUDA.h
-        Clustering.cu
-        ColorProcessing.cu
-        SpecularHighlightRemoval.cu
+        GPUCluster.h
+        GPURemoval.h
+        Removal.h
+        GPUCluster.cu
+        GPURemoval.cu
+        CPURemoval.h
+        Removal.cu
         )
 
 set(LIBS ${LIBS} ${OpenCV_LIBS} ${CUDA_LIBRARIES})

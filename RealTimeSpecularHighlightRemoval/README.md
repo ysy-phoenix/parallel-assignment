@@ -6,7 +6,7 @@ by Antonio Souza, Márcio Macedo, Verônica Nascimento and Bruno Oliveira.
 
 This is a C++/OpenCV/CUDA application for real-time specular highlight removal in still images. Technical details are provided in our [SIBGRAPI 2018 paper.](https://doi.org/10.1109/SIBGRAPI.2018.00014) 
 
-To enable real-time specular highlight removal using GPU, uncomment the line #define REMOVE_SPECULAR_HIGHLIGHT_USING_CUDA in include/SpecularHighlightRemoval/useCUDA.h.
+To enable real-time specular highlight removal using GPU, uncomment the line #define USE_CUDA in include/Removal/useCUDA.h.
 
 ## Citation
 
