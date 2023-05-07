@@ -98,37 +98,30 @@ void pageRank(Graph &g, double *solution, double damping, double convergence) {
     delete[] score_new;
     delete[] sink_nodes;
 }
-class solution {
-public:
-    std::string name;
-    int age;
-//    solution() = default;
-    explicit solution(std::string& input, int age) {
-        this->name = input;
-        this->age = age;
-    };
 
-};
+/*
+ 30m
+Threads  Time (Speedup)
+   1:   8.1591 (1.0000x)
+   2:   4.5389 (1.7976x)
+   4:   3.7367 (2.1835x)
+   8:   2.7119 (3.0086x)
+  12:   1.5835 (5.1525x)
 
-void test() {
-    std::string name1 = "s1";
-    std::string name2 = "s2";
-    solution s1(name1, 10);
-    solution s2(name2, 20);
+ 200m
+Threads  Time (Speedup)
+   1:   98.4049 (1.0000x)
+   2:   61.9910 (1.5874x)
+   4:   40.0996 (2.4540x)
+   8:   27.8904 (3.5283x)
+  12:   25.1902 (3.9065x)
 
-    solution *ref1 = &s1;
-    solution *ref2 = &s2;
+ 500m
+Threads  Time (Speedup)
+   1:   207.5861 (1.0000x)
+   2:   122.8726 (1.6894x)
+   4:   77.3727 (2.6829x)
+   8:   52.5545 (3.9499x)
+  12:   42.5584 (4.8777x)
 
-    std::cout << ref1->name << " " << ref1->age << std::endl;
-    std::cout << ref2->name << " " << ref2->age << std::endl;
-
-//    solution *ref = ref1;
-//    ref1 = ref2;
-//    ref2 = ref;
-    std::swap(ref1, ref2);
-    std::cout << ref1->name << " " << ref1->age << std::endl;
-    std::cout << ref2->name << " " << ref2->age << std::endl;
-
-    std::cout << s1.name << " " << s1.age << std::endl;
-    std::cout << s2.name << " " << s2.age << std::endl;
-}
+ * */

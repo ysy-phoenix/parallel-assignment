@@ -14,7 +14,6 @@
 #define PageRankConvergence 1e-7
 
 int main(int argc, char **argv) {
-    test();
     std::string graph_filename;
 
     if (argc < 2) {

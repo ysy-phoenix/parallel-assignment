@@ -5,7 +5,11 @@ Removal::Removal() {
     this->alpha = 3;
     this->beta = 0.51;
     this->gamma = 0.025;
+#ifdef USE_CUDA
     this->useSort = true;
+#else
+    this->useSort = true;
+#endif
 }
 
 Removal::~Removal() {
@@ -107,21 +111,28 @@ cv::Mat Removal::run(cv::Mat &image) {
     auto rows = deviceImage.rows;
     auto cols = deviceImage.cols;
 
+    auto begin = std::chrono::high_resolution_clock::now();
     // calculate the minimum, maximum and range images
     deviceCalculateMinMaxRange(
             deviceImgPtr, deviceMinImgPtr, deviceMaxImgPtr, deviceRangeImgPtr,
             pitch, minPitch, maxPitch, rangePitch, rows, cols
     );
+    auto end = std::chrono::high_resolution_clock::now();
+    auto totalTime = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
 
     cv::Mat hostMinImage;
     deviceMinImage.download(hostMinImage);
-    cv::meanStdDev(hostMinImage, minMean, stdDevMean);
+    minMean = cv::mean(hostMinImage);
+
+    begin = std::chrono::high_resolution_clock::now();
     deviceCalculatePseudoChromaticity(
             deviceImgPtr, deviceMinImgPtr,
             deviceMinChromaticImgPtr, deviceMaxChromaticImgPtr, deviceMaskImgPtr,
             pitch, minPitch, minChromaticPitch, maxChromaticPitch, maskPitch, (float) minMean(0),
             rows, cols
     );
+    end = std::chrono::high_resolution_clock::now();
+    totalTime += std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
 
     cv::Mat hostMaskImage;
     deviceMaskImage.download(hostMaskImage);
@@ -133,29 +144,41 @@ cv::Mat Removal::run(cv::Mat &image) {
     auto minClusterIndex = minLocation.y * deviceImage.cols + minLocation.x;
     auto maxClusterIndex = maxLocation.y * deviceImage.cols + maxLocation.x;
     auto maxMinClusterIndex = maxMinLocation.y * deviceImage.cols + maxMinLocation.x;
+
+    begin = std::chrono::high_resolution_clock::now();
     GPUCluster(
             deviceMinChromaticImgPtr, deviceMaxChromaticImgPtr, deviceClusterImgPtr,
             deviceMinCenters, deviceMaxCenters,
             minClusterIndex, maxClusterIndex, maxMinClusterIndex, minChromaticPitch, maxChromaticPitch, clusterPitch,
             rows, cols
     );
+    end = std::chrono::high_resolution_clock::now();
+    totalTime += std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
 
+    begin = std::chrono::high_resolution_clock::now();
     deviceCalculateIntensityRatio(
             deviceClusterImgPtr, deviceRangeImgPtr, deviceMaxImgPtr, deviceRatioImgPtr, clusterPitch,
             rangePitch, maxPitch, ratioPitch, (float) minMean(0),
             midPercent, 3, useSort, alpha, beta, gamma,
             rows, cols
     );
+    end = std::chrono::high_resolution_clock::now();
+    totalTime += std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
 
+    begin = std::chrono::high_resolution_clock::now();
     deviceSeparateComponents(
             deviceImgPtr, deviceSpecularImgPtr, deviceDiffuseImgPtr,
             deviceMaxImgPtr, deviceRangeImgPtr, deviceMaskImgPtr, deviceRatioImgPtr,
             pitch, specularPitch, diffusePitch, maxPitch, rangePitch, maskPitch, ratioPitch,
             rows, cols
     );
+    end = std::chrono::high_resolution_clock::now();
+    totalTime += std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
+    std::cout << "GPU Total time: " << totalTime << "us" << std::endl;
 
     deviceSpecularImage.download(specularImage);
     deviceDiffuseImage.download(diffuseImage);
+
     return diffuseImage;
 #else
 

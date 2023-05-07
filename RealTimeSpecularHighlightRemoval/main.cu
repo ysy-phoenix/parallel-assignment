@@ -12,15 +12,20 @@ int main(int argc, char *argv[]) {
     cv::Mat inputImage = cv::imread(argv[1]);
     cv::Mat outputImage;
 
+    auto begin = std::chrono::high_resolution_clock::now();
     Removal removal;
     removal.initialize(inputImage.rows, inputImage.cols);
 
-    auto begin = std::chrono::high_resolution_clock::now();
+
     outputImage = removal.run(inputImage);
     auto end = std::chrono::high_resolution_clock::now();
-    std::cout << "Time: " << std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() << "ns"
+    #ifndef USE_CUDA
+    std::cout << "Time: " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "us"
               << std::endl;
+    #endif
 
+    // save output image
+    cv::imwrite("fix.png", outputImage);
     while (cv::waitKey(33) != 13) {
         cv::imshow("Input Image", inputImage);
         cv::imshow("Output Image", outputImage);

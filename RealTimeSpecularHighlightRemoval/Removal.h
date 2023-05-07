@@ -4,6 +4,9 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/cudaimgproc.hpp>
+#include <opencv2/core/core.hpp>
+#include <opencv2/core/cuda.hpp>
+#include <opencv2/cudaarithm.hpp>
 
 #define USE_CUDA
 
@@ -57,7 +60,6 @@ private:
     cv::cuda::GpuMat deviceMinImage, deviceMaxImage, deviceRangeImage, deviceMaskImage;
     cv::cuda::GpuMat deviceMinChromaticImage, deviceMaxChromaticImage, deviceClusterImage, deviceRatioImage;
     float *deviceMinCenters{}, *deviceMaxCenters{};
-    cv::Scalar stdDevMean;
 #else
     cv::Mat minImage, maxImage, rangeImage, maskImage;
     cv::Mat minChromaticImage, maxChromaticImage, clusterImage, ratioImage;
